@@ -85,6 +85,15 @@ namespace modbuslib
             
             return answer;
         }
+        
+        public void CompletelySignOff()
+        {
+            string command = "\u0001B0\u0003\u0071";
+            
+            Thread.Sleep(250);
+            
+            SerPort.Write(command);
+        }
 
         public byte GetBCC(byte[] inputStream)
         {
