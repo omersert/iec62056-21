@@ -36,6 +36,10 @@ namespace modbuslib
 
             string command = (char)6 + "050" + Environment.NewLine;
             SerPort.WriteLine(command);
+            
+            Thread.Sleep(250);
+            
+            SerPort.BaudRate = 9600;
             string answer = SerPort.ReadTo(Convert.ToString((char)3));
 
             return answer;
