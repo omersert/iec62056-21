@@ -19,20 +19,6 @@ namespace modbuslib
             string s2 = "fasfsdfdsf(000002.314*kWh)1232323132";
             var s1 = Regex.Match(s2, @"\((.*?)\)").Value;
             */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             
             SerialPort port1 = new SerialPort("COM1");
             port1.BaudRate = 300;
