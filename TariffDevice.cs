@@ -15,10 +15,13 @@ namespace modbuslib
         
         public string SerialNo { get; set; }
 
+        public bool isItMakel { get; set; }
+
         public TariffDevice(SerialPort SerPort,  string SerialNo)
         {
             this.SerPort = SerPort;
             this.SerialNo = SerialNo;
+            this.isItMakel = true;
         }
         public string Identification(string Brand)
         {
@@ -30,15 +33,35 @@ namespace modbuslib
             return answer;
 
         }
+        public string Identification2()
+        {
+            string command1 = $"/?MSY{SerialNo}!{Environment.NewLine}";
+            string command2 = $"/?{SerialNo}!{Environment.NewLine}";
+            this.SerPort.Open();
+            string answer = "";
+            try
+            {
+                this.SerPort.WriteLine(command1);
+                answer = this.SerPort.ReadLine();
+            }
+            catch
+            {
+                this.SerPort.WriteLine(command2);
+                answer = this.SerPort.ReadLine();
+                this.isItMakel = false;
+            }
+            
+            return answer;
+        }
+
         public string ReadOut()
         {
             Thread.Sleep(250);
 
             string command = (char)6 + "050" + Environment.NewLine;
             SerPort.WriteLine(command);
-            
+
             Thread.Sleep(250);
-            
             SerPort.BaudRate = 9600;
             string answer = SerPort.ReadTo(Convert.ToString((char)3));
 
@@ -69,7 +92,31 @@ namespace modbuslib
 
             return answer;
         }
-        
+
+        public string ProgrammingMode2()
+        {
+            Thread.Sleep(250);
+
+            string command = (char)6 + "051" + Environment.NewLine;
+            string answer = "";
+
+            SerPort.WriteLine(command);
+
+            Thread.Sleep(250);
+
+            SerPort.BaudRate = 9600;
+            if (this.isItMakel == false)
+            {
+                answer = "ACK";
+            }
+            else
+            {
+                answer = SerPort.ReadTo(Convert.ToString((char)3));
+            }
+            return answer;
+        }
+
+
         public string GetObisResult(string Obis)
         {
             Thread.Sleep(250);
@@ -89,13 +136,13 @@ namespace modbuslib
             
             return answer;
         }
-        
+
         public void CompletelySignOff()
         {
             string command = "\u0001B0\u0003\u0071";
-            
+
             Thread.Sleep(250);
-            
+
             SerPort.Write(command);
         }
 
