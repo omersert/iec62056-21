@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using static System.Net.Mime.MediaTypeNames;
@@ -124,8 +125,14 @@ namespace modbuslib
             string command2 = ComputeBCC(command3);
             SerPort.Write(command2);
             string query_result = SerPort.ReadTo(Convert.ToString((char)3));
-            
-            return query_result;
+
+            Regex rx = new Regex(@"\((.*?)\)");
+            var s1 = Regex.Match(query_result, @"\((.*?)\)").Value;
+
+            s1 = s1.TrimStart('(');
+            s1 = s1.Remove(s1.Length - 1);
+
+            return s1;
         }
 
         public string UreticiyeOzel()
