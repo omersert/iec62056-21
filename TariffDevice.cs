@@ -38,7 +38,13 @@ namespace modbuslib
         {
             string command1 = $"/?MSY{SerialNo}!{Environment.NewLine}";
             string command2 = $"/?{SerialNo}!{Environment.NewLine}";
-            this.SerPort.Open();
+            this.SerPort.BaudRate = 300;
+            this.isItMakel = true;
+            if (!this.SerPort.IsOpen)
+            {
+                this.SerPort.Open();
+            }
+            
             string answer = "";
             try
             {
