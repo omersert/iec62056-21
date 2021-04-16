@@ -1,193 +1,90 @@
 using System;
-using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace modbuslib
 {
-    class TariffDevice
+    public static class Program
     {
-        public SerialPort SerPort { get; set; }
         
-        public string SerialNo { get; set; }
-
-        public bool isItMakel { get; set; }
-
-        public TariffDevice(SerialPort SerPort,  string SerialNo)
+        static void Main(string[] args)
         {
-            this.SerPort = SerPort;
-            this.SerialNo = SerialNo;
-            this.isItMakel = true;
-        }
-        public string Identification(string Brand)
-        {
-            string command = Brand == "Makel" ? $"/?MSY{SerialNo}!{Environment.NewLine}" : $"/?{SerialNo}!{Environment.NewLine}";
-            this.SerPort.Open();
-            this.SerPort.WriteLine(command);
-            string answer = this.SerPort.ReadLine();
+            SerialPort port1 = new SerialPort("COM1");
+            port1.BaudRate = 300;
+            port1.Parity = Parity.Even;
+            port1.StopBits = StopBits.One;
+            port1.DataBits = 7;
+            port1.ReadTimeout = 3000;
+            port1.RtsEnable = true;
+            port1.DtrEnable = true;
 
-            return answer;
-
-        }
-        public string Identification2()
-        {
-            string command1 = $"/?MSY{SerialNo}!{Environment.NewLine}";
-            string command2 = $"/?{SerialNo}!{Environment.NewLine}";
-            this.SerPort.BaudRate = 300;
-            this.isItMakel = true;
-            if (!this.SerPort.IsOpen)
-            {
-                this.SerPort.Open();
-            }
+            string SerialNo_Makel = "40782736";
+            string SerialNo_Kohler = "21003746";
             
-            string answer = "";
-            try
-            {
-                this.SerPort.WriteLine(command1);
-                answer = this.SerPort.ReadLine();
-            }
-            catch
-            {
-                this.SerPort.WriteLine(command2);
-                answer = this.SerPort.ReadLine();
-                this.isItMakel = false;
-            }
+            TariffDevice _device1 = new TariffDevice(port1, SerialNo_Kohler);
             
-            return answer;
-        }
 
-        public string ReadOut()
-        {
-            Thread.Sleep(250);
-
-            string command = (char)6 + "050" + Environment.NewLine;
-            SerPort.WriteLine(command);
-
-            Thread.Sleep(250);
-            SerPort.BaudRate = 9600;
-            string answer = SerPort.ReadTo(Convert.ToString((char)3));
-
-            return answer;
-        }
-
-        public string ProgrammingMode(string Brand)
-        {
-            Thread.Sleep(250);
-
-            string command = (char)6 + "051" + Environment.NewLine;
-            string answer = "";
-
-            SerPort.WriteLine(command);
-
-            Thread.Sleep(250);
-
-            SerPort.BaudRate = 9600;
-
-            if (Brand == "Makel")
-            {
-                 answer = SerPort.ReadTo(Convert.ToString((char)3));
-            }
-            else
-            {
-                 answer = "ACK";
-            }
-
-            return answer;
-        }
-
-        public string ProgrammingMode2()
-        {
-            Thread.Sleep(250);
-
-            string command = (char)6 + "051" + Environment.NewLine;
-            string answer = "";
-
-            SerPort.WriteLine(command);
-
-            Thread.Sleep(250);
-
-            SerPort.BaudRate = 9600;
-            if (this.isItMakel == false)
-            {
-                answer = "ACK";
-            }
-            else
-            {
-                answer = SerPort.ReadTo(Convert.ToString((char)3));
-            }
-            return answer;
-        }
-
-
-        public string GetObisResult(string Obis)
-        {
-            Thread.Sleep(250);
-            string command3 = $"\u0001R2\u0002{Obis}()\u0003";
-            string command2 = ComputeBCC(command3);
-            SerPort.Write(command2);
-            string query_result = SerPort.ReadTo(Convert.ToString((char)3));
-
-            Regex rx = new Regex(@"\((.*?)\)");
-            var s1 = Regex.Match(query_result, @"\((.*?)\)").Value;
-
-            s1 = s1.TrimStart('(');
-            s1 = s1.Remove(s1.Length - 1);
-
-            return s1;
-        }
-
-        public string UreticiyeOzel()
-        {
-            Thread.Sleep(250);
-            string command = (char)6 + "057" + Environment.NewLine;
-            string answer = SerPort.ReadTo(Convert.ToString((char)3));
+            string id = _device1.Identification2(); 
+            System.Diagnostics.Debug.WriteLine(id);
             
-            return answer;
-        }
+            var ans1 = _device1.ProgrammingMode2(); 
+            System.Diagnostics.Debug.WriteLine(ans1 + "\n");
 
-        public void CompletelySignOff()
-        {
-            string command = "\u0001B0\u0003\u0071";
+            string[] arr1 = { "0.9.1", "0.9.2", "1.8.0" };
 
-            Thread.Sleep(250);
-
-            SerPort.Write(command);
-        }
-
-        public byte GetBCC(byte[] inputStream)
-        {
-            byte bcc = 0;
-
-            if (inputStream != null && inputStream.Length > 0)
+            foreach (string a in arr1)
             {
-
-                for (int i = 1; i < inputStream.Length; i++)
-                {
-                    bcc ^= inputStream[i];
-                }
+                System.Diagnostics.Debug.WriteLine($"{a} {_device1.GetObisResult(a)}");
             }
 
-            return bcc;
-        }
+            _device1.CompletelySignOff();
+            System.Diagnostics.Debug.WriteLine("");
 
-        public string ComputeBCC(String inputstr)
-        {
-            byte[] ba = Encoding.Default.GetBytes(inputstr);
-            var hex = BitConverter.ToString(ba);
-            hex = hex.Replace("-", "");
-            int NumberChars = hex.Length;
-            byte[] bytes = new byte[NumberChars / 2];
-            for (int i = 0; i < NumberChars; i += 2)
-                bytes[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
+            
+            Thread.Sleep(250);
 
-            var bccdec = GetBCC(bytes);
-            string result = $"{inputstr}{(char)bccdec}";
-            return result;
+            _device1.SerialNo = SerialNo_Makel;
+
+            string id2 = _device1.Identification2();
+            System.Diagnostics.Debug.WriteLine(id2);
+
+            var ans2 = _device1.ProgrammingMode2();
+            System.Diagnostics.Debug.WriteLine(ans2 + "\n");
+
+
+            foreach (string a in arr1)
+            {
+                System.Diagnostics.Debug.WriteLine($"{a} {_device1.GetObisResult(a)}");
+            }
+
+            _device1.CompletelySignOff();
+            System.Diagnostics.Debug.WriteLine("");
+
+
+
+
+            _device1.SerialNo = SerialNo_Kohler;
+
+            string id3 = _device1.Identification2();
+            System.Diagnostics.Debug.WriteLine(id3);
+
+            var ans3 = _device1.ProgrammingMode2();
+            System.Diagnostics.Debug.WriteLine(ans3 + "\n");
+
+
+            foreach (string a in arr1)
+            {
+                System.Diagnostics.Debug.WriteLine($"{a} {_device1.GetObisResult(a)}");
+            }
+
+            _device1.CompletelySignOff();
+            System.Diagnostics.Debug.WriteLine("");
+
+
+
         }
     }
 }
